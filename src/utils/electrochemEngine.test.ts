@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFaradayDerivation,
   computeElectrolysisAtTime,
+  computeElectronMotionProfile,
   generateChartSeries,
   getDefaultParams,
   getElectrolysisMilestones,
@@ -129,3 +130,22 @@ test('Chart series and milestones include exact Cu2+ depletion point and derivat
   assert.match(steps[0].result, /3 860 C/);
   assert.match(steps[1].result, /0,0400 mol/);
 });
+
+test('Electron motion profile accelerates smoothly with entered current I and playbackSpeed', () => {
+  const lowI = computeElectronMotionProfile(0.5, 1);
+  const midI = computeElectronMotionProfile(2, 1);
+  const highI = computeElectronMotionProfile(8, 1);
+  const extremeI = computeElectronMotionProfile(100, 1);
+  const fastPlay = computeElectronMotionProfile(2, 2);
+
+  assert.ok(lowI.cyclesPerSecond < midI.cyclesPerSecond);
+  assert.ok(midI.cyclesPerSecond < highI.cyclesPerSecond);
+  assert.ok(highI.cyclesPerSecond <= extremeI.cyclesPerSecond);
+  assert.ok(lowI.dashDurationSeconds > midI.dashDurationSeconds);
+  assert.ok(midI.dashDurationSeconds > highI.dashDurationSeconds);
+  assert.ok(lowI.wireParticleCount < midI.wireParticleCount);
+  assert.ok(midI.wireParticleCount < highI.wireParticleCount);
+  assert.ok(Math.abs(fastPlay.cyclesPerSecond - midI.cyclesPerSecond * 2) < 1e-9);
+  assert.ok(extremeI.currentFactor <= 3.5);
+});
+

@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ElectrolysisSnapshot } from '../utils/electrochemEngine';
+import {
+  ElectrolysisSnapshot,
+  computeElectronMotionProfile,
+} from '../utils/electrochemEngine';
 import { formatViNumber } from '../utils/faraday';
 
 export interface HotspotInfo {
@@ -40,7 +43,11 @@ function samplePolyline(
   return points[points.length - 1];
 }
 
-function useElectronPhase(active: boolean, speed: number, reducedMotion: boolean): number {
+function useElectronPhase(
+  active: boolean,
+  cyclesPerSecond: number,
+  reducedMotion: boolean
+): number {
   const [phase, setPhase] = useState<number>(0.32);
   const lastRef = useRef<number | null>(null);
 
@@ -59,7 +66,7 @@ function useElectronPhase(active: boolean, speed: number, reducedMotion: boolean
       }
       const dt = Math.min(now - lastRef.current, 60) / 1000;
       lastRef.current = now;
-      setPhase((prev) => (prev + dt * 0.32 * speed) % 1);
+      setPhase((prev) => (prev + dt * cyclesPerSecond) % 1);
       rafId = window.requestAnimationFrame(tick);
     };
 
@@ -68,7 +75,7 @@ function useElectronPhase(active: boolean, speed: number, reducedMotion: boolean
       window.cancelAnimationFrame(rafId);
       lastRef.current = null;
     };
-  }, [active, speed, reducedMotion]);
+  }, [active, cyclesPerSecond, reducedMotion]);
 
   return reducedMotion ? 0.32 : phase;
 }
@@ -78,18 +85,31 @@ interface ElectronOrbProps {
   y: number;
   mode: 'move' | 'detach' | 'attach';
   opacity?: number;
+  glowIntensity?: number;
 }
 
-const ElectronOrb: React.FC<ElectronOrbProps> = ({ x, y, mode, opacity = 1 }) => {
-  const stroke = mode === 'attach' ? '#F2C864' : '#78D4C4';
-  const glow = mode === 'attach' ? '#F2C864' : '#78D4C4';
-  const fill = mode === 'attach' ? '#2B1F11' : '#0B2429';
-  const textFill = mode === 'attach' ? '#FFF1C7' : '#E9FFFA';
+const ElectronOrb: React.FC<ElectronOrbProps> = ({
+  x,
+  y,
+  mode,
+  opacity = 1,
+  glowIntensity = 0.8,
+}) => {
+  const stroke = mode === 'attach' ? '#F5CE6B' : '#78E2D2';
+  const glow = mode === 'attach' ? '#F5CE6B' : '#78E2D2';
+  const fill = mode === 'attach' ? '#2D200E' : '#09262C';
+  const textFill = mode === 'attach' ? '#FFF5D6' : '#ECFFFC';
 
   return (
-    <g transform={`translate(${x.toFixed(1)}, ${y.toFixed(1)})`} opacity={opacity} pointerEvents="none">
-      <circle r="10.5" fill={glow} fillOpacity="0.18" />
-      <circle r="7.2" fill={fill} stroke={stroke} strokeWidth="1.5" />
+    <g
+      transform={`translate(${x.toFixed(1)}, ${y.toFixed(1)})`}
+      opacity={opacity}
+      pointerEvents="none"
+    >
+      {/* Outer luminous aura */}
+      <circle r="12.5" fill={glow} fillOpacity={(0.14 * glowIntensity).toFixed(2)} />
+      <circle r="9.4" fill={glow} fillOpacity={(0.24 * glowIntensity).toFixed(2)} />
+      <circle r="7.2" fill={fill} stroke={stroke} strokeWidth="1.6" />
       <text
         x="0"
         y="3"
@@ -109,15 +129,34 @@ interface WireElectronsProps {
   points: readonly [number, number][];
   phase: number;
   count?: number;
+  glowIntensity?: number;
 }
 
-const WireElectrons: React.FC<WireElectronsProps> = ({ points, phase, count = 6 }) => {
+const WireElectrons: React.FC<WireElectronsProps> = ({
+  points,
+  phase,
+  count = 6,
+  glowIntensity = 0.8,
+}) => {
   return (
     <g aria-hidden="true" pointerEvents="none">
       {Array.from({ length: count }).map((_, i) => {
         const u = (phase + i / count) % 1;
         const [x, y] = samplePolyline(points, u);
-        return <ElectronOrb key={i} x={x} y={y} mode="move" />;
+        // Subtle luminous comet trail slightly behind each electron along the wire
+        const [tx, ty] = samplePolyline(points, u - 0.022);
+        return (
+          <g key={i}>
+            <circle
+              cx={tx.toFixed(1)}
+              cy={ty.toFixed(1)}
+              r="3.2"
+              fill="#78E2D2"
+              fillOpacity={(0.36 * glowIntensity).toFixed(2)}
+            />
+            <ElectronOrb x={x} y={y} mode="move" glowIntensity={glowIntensity} />
+          </g>
+        );
       })}
     </g>
   );
@@ -133,6 +172,7 @@ interface AnodeDetachElectronsProps {
   badgeWidth?: number;
   label: string;
   phase: number;
+  glowIntensity?: number;
 }
 
 const AnodeDetachElectrons: React.FC<AnodeDetachElectronsProps> = ({
@@ -145,6 +185,7 @@ const AnodeDetachElectrons: React.FC<AnodeDetachElectronsProps> = ({
   badgeWidth = 54,
   label,
   phase,
+  glowIntensity = 0.8,
 }) => {
   const pathPoints: [number, number][] = [
     [detachX, detachY],
@@ -152,19 +193,47 @@ const AnodeDetachElectrons: React.FC<AnodeDetachElectronsProps> = ({
     [rodX, rodTopY],
   ];
   const rippleU = (phase * 2) % 1;
-  const rippleR = 5 + rippleU * 14;
-  const rippleOpacity = Math.max(0, 0.72 * (1 - rippleU));
+  const rippleR = 5 + rippleU * 15;
+  const rippleOpacity = Math.max(0, 0.8 * glowIntensity * (1 - rippleU));
+
+  // 3 luminous detachment points sparkling along the submerged anode edge
+  const sparkOffsets = [-22, 0, 22];
 
   return (
     <g aria-hidden="true" pointerEvents="none">
+      {sparkOffsets.map((dy, idx) => {
+        const su = (phase * 2.2 + idx * 0.33) % 1;
+        const pulse = Math.sin(su * Math.PI);
+        const sx = detachX + (rodX > detachX ? su * 5 : -su * 5);
+        const sy = detachY + dy - su * 6;
+        return (
+          <g key={idx}>
+            <circle
+              cx={sx.toFixed(1)}
+              cy={sy.toFixed(1)}
+              r={(5.5 + pulse * 3.5).toFixed(1)}
+              fill="#78E2D2"
+              fillOpacity={(0.26 * pulse * glowIntensity).toFixed(2)}
+            />
+            <circle
+              cx={sx.toFixed(1)}
+              cy={sy.toFixed(1)}
+              r={(2.2 + pulse * 1.4).toFixed(1)}
+              fill="#EAFFFC"
+              fillOpacity={(0.55 + 0.45 * pulse).toFixed(2)}
+            />
+          </g>
+        );
+      })}
+
       {/* Detachment separation pulse right at anode surface */}
       <circle
         cx={detachX}
         cy={detachY}
         r={rippleR.toFixed(1)}
         fill="none"
-        stroke="#78D4C4"
-        strokeWidth="1.4"
+        stroke="#78E2D2"
+        strokeWidth="1.5"
         strokeDasharray="3 2"
         opacity={rippleOpacity.toFixed(2)}
       />
@@ -172,7 +241,16 @@ const AnodeDetachElectrons: React.FC<AnodeDetachElectronsProps> = ({
         const u = (phase * 1.4 + offset) % 1;
         const [x, y] = samplePolyline(pathPoints, u);
         const fade = u < 0.12 ? u / 0.12 : u > 0.88 ? (1 - u) / 0.12 : 1;
-        return <ElectronOrb key={idx} x={x} y={y} mode="detach" opacity={Math.max(0.25, fade)} />;
+        return (
+          <ElectronOrb
+            key={idx}
+            x={x}
+            y={y}
+            mode="detach"
+            opacity={Math.max(0.28, fade)}
+            glowIntensity={glowIntensity}
+          />
+        );
       })}
       {/* Micro-badge "tách 2e⁻" */}
       <rect
@@ -211,6 +289,7 @@ interface CathodeAttachElectronsProps {
   badgeWidth?: number;
   label: string;
   phase: number;
+  glowIntensity?: number;
 }
 
 const CathodeAttachElectrons: React.FC<CathodeAttachElectronsProps> = ({
@@ -223,40 +302,69 @@ const CathodeAttachElectrons: React.FC<CathodeAttachElectronsProps> = ({
   badgeWidth = 54,
   label,
   phase,
+  glowIntensity = 0.8,
 }) => {
   const pathPoints: [number, number][] = [
     [rodX, rodTopY],
     [rodX, attachY - 12],
     [attachX, attachY],
   ];
-  // Contracting ring as electron attaches onto ion/species
+  // Contracting capture ring as electron attaches onto ion/species
   const captureU = (phase * 2) % 1;
   const captureR = 17 - captureU * 12;
-  const captureOpacity = Math.max(0, 0.78 * (1 - Math.abs(captureU - 0.5) * 1.4));
+  const captureOpacity = Math.max(0, 0.82 * glowIntensity * (1 - Math.abs(captureU - 0.5) * 1.4));
+
+  // 3 luminous attachment points gleaming right on the submerged cathode surface
+  const attachOffsets = [-22, 0, 22];
 
   return (
     <g aria-hidden="true" pointerEvents="none">
+      {attachOffsets.map((dy, idx) => {
+        const su = (phase * 2.2 + idx * 0.33) % 1;
+        const pulse = Math.sin(su * Math.PI);
+        return (
+          <g key={idx}>
+            <circle
+              cx={attachX}
+              cy={attachY + dy}
+              r={(5.5 + pulse * 4).toFixed(1)}
+              fill="#F5CE6B"
+              fillOpacity={(0.3 * pulse * glowIntensity).toFixed(2)}
+            />
+            <circle
+              cx={attachX}
+              cy={attachY + dy}
+              r={(2.2 + pulse * 1.5).toFixed(1)}
+              fill="#FFF6D6"
+              fillOpacity={(0.55 + 0.45 * pulse).toFixed(2)}
+            />
+          </g>
+        );
+      })}
+
       <circle
         cx={attachX}
         cy={attachY}
         r={captureR.toFixed(1)}
         fill="none"
-        stroke="#F2C864"
-        strokeWidth="1.5"
+        stroke="#F5CE6B"
+        strokeWidth="1.6"
         opacity={captureOpacity.toFixed(2)}
-      />
-      <circle
-        cx={attachX}
-        cy={attachY}
-        r="3.2"
-        fill="#F2C864"
-        opacity={(0.35 + captureU * 0.55).toFixed(2)}
       />
       {[0, 0.5].map((offset, idx) => {
         const u = (phase * 1.4 + offset) % 1;
         const [x, y] = samplePolyline(pathPoints, u);
         const fade = u < 0.12 ? u / 0.12 : u > 0.9 ? (1 - u) / 0.1 : 1;
-        return <ElectronOrb key={idx} x={x} y={y} mode="attach" opacity={Math.max(0.28, fade)} />;
+        return (
+          <ElectronOrb
+            key={idx}
+            x={x}
+            y={y}
+            mode="attach"
+            opacity={Math.max(0.3, fade)}
+            glowIntensity={glowIntensity}
+          />
+        );
       })}
       {/* Micro-badge "bám 2e⁻" */}
       <rect
@@ -330,7 +438,8 @@ export const LabZnCuSvg: React.FC<LabZnCuSvgProps> = ({
   onToggleCircuit,
 }) => {
   const animate = circuitClosed && isRunning && !reducedMotion;
-  const electronPhase = useElectronPhase(animate, playbackSpeed, reducedMotion);
+  const motionProfile = computeElectronMotionProfile(2, playbackSpeed);
+  const electronPhase = useElectronPhase(animate, motionProfile.cyclesPerSecond, reducedMotion);
   const znWear = circuitClosed ? progress * 6 : 0;
   const cuPlate = circuitClosed ? progress * 6.5 : 0;
   const cuBlueOpacity = Math.max(0.24, 0.54 - (circuitClosed ? progress * 0.24 : 0));
@@ -504,6 +613,16 @@ export const LabZnCuSvg: React.FC<LabZnCuSvgProps> = ({
       {/* Electron Flow Path (e- Zn -> Cu) + Moving Electron Orbs */}
       {circuitClosed && (
         <g>
+          {/* Luminous outer-wire electron trajectory aura */}
+          <path
+            d="M 148 164 L 148 52 L 532 52 L 532 164"
+            fill="none"
+            stroke="#78E2D2"
+            strokeWidth="7"
+            strokeOpacity="0.14"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <path
             d="M 148 158 L 148 52 L 532 52 L 532 158"
             fill="none"
@@ -512,6 +631,11 @@ export const LabZnCuSvg: React.FC<LabZnCuSvgProps> = ({
             strokeDasharray="8 8"
             markerEnd="url(#arrowJade)"
             className={animate ? 'animate-dash-forward' : ''}
+            style={
+              animate
+                ? { animationDuration: `${motionProfile.dashDurationSeconds.toFixed(2)}s` }
+                : undefined
+            }
           />
           <WireElectrons
             points={[
@@ -521,7 +645,8 @@ export const LabZnCuSvg: React.FC<LabZnCuSvgProps> = ({
               [532, 166],
             ]}
             phase={electronPhase}
-            count={6}
+            count={motionProfile.wireParticleCount}
+            glowIntensity={motionProfile.sparkIntensity}
           />
           <rect x="164" y="16" width="114" height="24" rx="4" fill="#112428" stroke="#78D4C4" strokeWidth="1" />
           <text
@@ -972,6 +1097,7 @@ export const LabZnCuSvg: React.FC<LabZnCuSvgProps> = ({
 interface LabCuSO4SvgProps {
   snapshot: ElectrolysisSnapshot;
   isRunning: boolean;
+  currentA?: number;
   playbackSpeed?: number;
   reducedMotion: boolean;
   activeHotspotId: string | null;
@@ -981,6 +1107,7 @@ interface LabCuSO4SvgProps {
 export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
   snapshot,
   isRunning,
+  currentA = 2,
   playbackSpeed = 1,
   reducedMotion,
   activeHotspotId,
@@ -989,7 +1116,8 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
   const isInert = snapshot.variant === 'cuso4-inert';
   const activeFlow = snapshot.timeSeconds > 0 || isRunning;
   const animate = activeFlow && isRunning && !reducedMotion;
-  const electronPhase = useElectronPhase(animate, playbackSpeed, reducedMotion);
+  const motionProfile = computeElectronMotionProfile(currentA, playbackSpeed);
+  const electronPhase = useElectronPhase(animate, motionProfile.cyclesPerSecond, reducedMotion);
 
   const cuPlatingPx = Math.min(11, snapshot.cuPlatedG * 10);
   const anodeWearPx = !isInert ? Math.min(10, snapshot.cuLostAtAnodeG * 9) : 0;
@@ -1041,6 +1169,8 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
       viewBox="0 0 680 410"
       className="w-full h-auto block select-none"
       role="img"
+      data-electron-cps={motionProfile.cyclesPerSecond.toFixed(3)}
+      data-wire-electrons={motionProfile.wireParticleCount}
       aria-label={`Sơ đồ bình điện phân dung dịch CuSO4 dùng ${isInert ? 'điện cực trơ' : 'anode đồng'}`}
     >
       <defs>
@@ -1112,6 +1242,16 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
       {/* Electron Flow: Anode (+) -> DC -> Cathode (-) + Moving Electron Orbs */}
       {activeFlow && (
         <g>
+          {/* Luminous outer-wire trajectory aura */}
+          <path
+            d="M 436 164 L 436 50 L 244 50 L 244 164"
+            fill="none"
+            stroke="#78E2D2"
+            strokeWidth="7"
+            strokeOpacity="0.14"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <path
             d="M 436 154 L 436 50 L 244 50 L 244 154"
             fill="none"
@@ -1120,6 +1260,11 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
             strokeDasharray="8 8"
             markerEnd="url(#arrowJade2)"
             className={animate ? 'animate-dash-forward' : ''}
+            style={
+              animate
+                ? { animationDuration: `${motionProfile.dashDurationSeconds.toFixed(2)}s` }
+                : undefined
+            }
           />
           <WireElectrons
             points={[
@@ -1129,19 +1274,20 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
               [244, 164],
             ]}
             phase={electronPhase}
-            count={6}
+            count={motionProfile.wireParticleCount}
+            glowIntensity={motionProfile.sparkIntensity}
           />
-          <rect x="448" y="20" width="166" height="24" rx="4" fill="#112428" stroke="#78D4C4" strokeWidth="1" />
+          <rect x="444" y="18" width="218" height="24" rx="4" fill="#112428" stroke="#78D4C4" strokeWidth="1" />
           <text
-            x="531"
-            y="36"
+            x="553"
+            y="34"
             textAnchor="middle"
             fill="#78D4C4"
-            fontSize="11.5"
+            fontSize="11"
             fontWeight="700"
             fontFamily="var(--font-sans)"
           >
-            e⁻ : Anode (+) → Cathode (−)
+            e⁻ : Anode (+) → Cathode (−) · I = {formatViNumber(currentA, { maxDecimals: 2 })} A
           </text>
         </g>
       )}
@@ -1438,6 +1584,7 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
             badgeWidth={56}
             label="bám 2e⁻"
             phase={electronPhase}
+            glowIntensity={motionProfile.sparkIntensity}
           />
           <AnodeDetachElectrons
             detachX={420}
@@ -1449,6 +1596,7 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
             badgeWidth={56}
             label={isInert ? 'tách 4e⁻' : 'tách 2e⁻'}
             phase={electronPhase}
+            glowIntensity={motionProfile.sparkIntensity}
           />
         </>
       )}
@@ -1474,6 +1622,7 @@ export const LabCuSO4Svg: React.FC<LabCuSO4SvgProps> = ({
 interface LabNaClSvgProps {
   snapshot: ElectrolysisSnapshot;
   isRunning: boolean;
+  currentA?: number;
   playbackSpeed?: number;
   reducedMotion: boolean;
   activeHotspotId: string | null;
@@ -1483,6 +1632,7 @@ interface LabNaClSvgProps {
 export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
   snapshot,
   isRunning,
+  currentA = 2,
   playbackSpeed = 1,
   reducedMotion,
   activeHotspotId,
@@ -1491,7 +1641,8 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
   const isMolten = snapshot.variant === 'nacl-molten';
   const activeFlow = snapshot.timeSeconds > 0 || isRunning;
   const animate = activeFlow && isRunning && !reducedMotion;
-  const electronPhase = useElectronPhase(animate, playbackSpeed, reducedMotion);
+  const motionProfile = computeElectronMotionProfile(currentA, playbackSpeed);
+  const electronPhase = useElectronPhase(animate, motionProfile.cyclesPerSecond, reducedMotion);
 
   const cathodeHotspot: HotspotInfo = {
     id: 'nacl-cathode',
@@ -1532,6 +1683,8 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
       viewBox="0 0 680 410"
       className="w-full h-auto block select-none"
       role="img"
+      data-electron-cps={motionProfile.cyclesPerSecond.toFixed(3)}
+      data-wire-electrons={motionProfile.wireParticleCount}
       aria-label={
         isMolten
           ? 'Sơ đồ bình điện phân NaCl nóng chảy tạo Na ở cathode âm và Cl2 ở anode dương'
@@ -1600,6 +1753,16 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
       {/* Electron flow + Moving Electron Orbs */}
       {activeFlow && (
         <g>
+          {/* Luminous outer-wire trajectory aura */}
+          <path
+            d="M 448 164 L 448 50 L 232 50 L 232 164"
+            fill="none"
+            stroke="#78E2D2"
+            strokeWidth="7"
+            strokeOpacity="0.14"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <path
             d="M 448 154 L 448 50 L 232 50 L 232 154"
             fill="none"
@@ -1608,6 +1771,11 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
             strokeDasharray="8 8"
             markerEnd="url(#arrowJade3)"
             className={animate ? 'animate-dash-forward' : ''}
+            style={
+              animate
+                ? { animationDuration: `${motionProfile.dashDurationSeconds.toFixed(2)}s` }
+                : undefined
+            }
           />
           <WireElectrons
             points={[
@@ -1617,19 +1785,20 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
               [232, 164],
             ]}
             phase={electronPhase}
-            count={6}
+            count={motionProfile.wireParticleCount}
+            glowIntensity={motionProfile.sparkIntensity}
           />
-          <rect x="460" y="20" width="166" height="24" rx="4" fill="#112428" stroke="#78D4C4" strokeWidth="1" />
+          <rect x="444" y="18" width="218" height="24" rx="4" fill="#112428" stroke="#78D4C4" strokeWidth="1" />
           <text
-            x="543"
-            y="36"
+            x="553"
+            y="34"
             textAnchor="middle"
             fill="#78D4C4"
-            fontSize="11.5"
+            fontSize="11"
             fontWeight="700"
             fontFamily="var(--font-sans)"
           >
-            e⁻ : Anode (+) → Cathode (−)
+            e⁻ : Anode (+) → Cathode (−) · I = {formatViNumber(currentA, { maxDecimals: 2 })} A
           </text>
         </g>
       )}
@@ -1943,6 +2112,7 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
             badgeWidth={56}
             label={isMolten ? 'bám e⁻' : 'bám 2e⁻'}
             phase={electronPhase}
+            glowIntensity={motionProfile.sparkIntensity}
           />
           <AnodeDetachElectrons
             detachX={432}
@@ -1954,6 +2124,7 @@ export const LabNaClSvg: React.FC<LabNaClSvgProps> = ({
             badgeWidth={56}
             label="tách 2e⁻"
             phase={electronPhase}
+            glowIntensity={motionProfile.sparkIntensity}
           />
         </>
       )}

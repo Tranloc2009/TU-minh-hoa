@@ -684,3 +684,44 @@ export function buildFaradayDerivation(
 
   return steps;
 }
+
+export interface ElectronMotionProfile {
+  /** Multiplier relative to baseline I = 2 A (clamped to [0.35, 3.5]) */
+  currentFactor: number;
+  /** Electron phase speed along wire in cycles per second */
+  cyclesPerSecond: number;
+  /** Matching SVG stroke-dashoffset animation duration in seconds */
+  dashDurationSeconds: number;
+  /** Number of discrete e⁻ luminous points visible along the external wire */
+  wireParticleCount: number;
+  /** Luminous intensity [0.55, 1] for anode detachment & cathode attachment sparks */
+  sparkIntensity: number;
+}
+
+/**
+ * Computes visual electron flow dynamics scaled continuously by entered current I (A)
+ * and screen playback speed so higher I clearly accelerates electron movement and flux
+ * while staying smoothly readable without aliasing at very high currents.
+ */
+export function computeElectronMotionProfile(
+  currentA: number,
+  playbackSpeed: number = 1
+): ElectronMotionProfile {
+  const safeI = Number.isFinite(currentA) && currentA > 0 ? currentA : 2;
+  const safeSpeed = Number.isFinite(playbackSpeed) && playbackSpeed > 0 ? playbackSpeed : 1;
+  const currentFactor = Math.max(0.35, Math.min(3.5, Math.pow(safeI / 2, 0.6)));
+  const effectiveMultiplier = currentFactor * safeSpeed;
+  const cyclesPerSecond = 0.3 * effectiveMultiplier;
+  const dashDurationSeconds = Math.max(0.16, 1.15 / effectiveMultiplier);
+  const wireParticleCount = safeI < 1 ? 4 : safeI < 3.5 ? 6 : safeI < 8 ? 8 : 10;
+  const sparkIntensity = Math.max(0.55, Math.min(1, 0.55 + 0.15 * Math.log2(safeI + 1)));
+
+  return {
+    currentFactor,
+    cyclesPerSecond,
+    dashDurationSeconds,
+    wireParticleCount,
+    sparkIntensity,
+  };
+}
+

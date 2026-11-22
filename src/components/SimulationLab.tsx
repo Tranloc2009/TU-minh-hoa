@@ -790,6 +790,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                 <LabCuSO4Svg
                   snapshot={snapshot}
                   isRunning={isRunning}
+                  currentA={activeParams.currentA}
                   playbackSpeed={playbackSpeed}
                   reducedMotion={reducedMotion}
                   activeHotspotId={activeHotspot?.id ?? null}
@@ -801,6 +802,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                 <LabNaClSvg
                   snapshot={snapshot}
                   isRunning={isRunning}
+                  currentA={activeParams.currentA}
                   playbackSpeed={playbackSpeed}
                   reducedMotion={reducedMotion}
                   activeHotspotId={activeHotspot?.id ?? null}
@@ -817,7 +819,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                   >
                     e⁻
                   </span>
-                  Hạt xanh ngọc: Electron <strong>tách ra</strong> ở Anode &amp; <strong>chuyển động</strong> trên dây dẫn
+                  Điểm sáng xanh ngọc: Electron <strong>tách khỏi Anode</strong> &amp; <strong>chuyển động</strong> trên dây ngoài
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <span
@@ -826,7 +828,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                   >
                     e⁻
                   </span>
-                  Hạt vàng đồng: Electron <strong>bám / kết hợp</strong> tại Cathode
+                  Điểm sáng vàng đồng: Electron <strong>bám / kết hợp</strong> tại Cathode
                 </span>
                 {experiment === 'pin-zn-cu' ? (
                   <>
@@ -848,11 +850,15 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                     )}
                   </>
                 ) : (
-                  <span className="inline-flex items-center gap-2">
-                    <span className="font-mono text-[#E39D6B]" aria-hidden="true">
-                      →
-                    </span>
-                    Mũi tên trong bể: Chiều di chuyển ion về điện cực trái dấu
+                  <span className="inline-flex items-center gap-2 text-[#78D4C4]">
+                    <span
+                      className="inline-block w-6 border-t-2 border-dashed border-[#78D4C4]"
+                      aria-hidden="true"
+                    />
+                    Đường dẫn dây ngoài: tốc độ &amp; mật độ <ChemText text="e⁻" /> biến thiên theo{' '}
+                    <strong className="font-mono">
+                      I = {formatViNumber(activeParams.currentA, { maxDecimals: 2 })} A
+                    </strong>
                   </span>
                 )}
               </div>
