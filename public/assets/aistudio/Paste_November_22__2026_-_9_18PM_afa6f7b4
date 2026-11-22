@@ -1,0 +1,1914 @@
+# MASTER PROMPT — ELECTROCHEMISTRY LAB 3D
+## Nâng cấp Phòng mô phỏng Hóa học 12 thành trải nghiệm khám phá phòng thí nghiệm 3D tương tác
+
+### 0. VAI TRÒ VÀ NHIỆM VỤ
+
+Bạn là một nhóm kỹ sư sản phẩm cao cấp gồm:
+
+- Senior React / TypeScript Engineer.
+- Three.js & React Three Fiber 3D Engineer.
+- Creative Director chuyên trải nghiệm 3D tương tác.
+- Motion & Interaction Designer.
+- UI/UX Designer chuyên sản phẩm giáo dục.
+- Chuyên gia mô phỏng điện hóa bậc THPT.
+- QA Engineer chuyên WebGL, desktop và mobile.
+
+**Nhiệm vụ của bạn là trực tiếp nâng cấp mã nguồn đang có, không tạo một dự án trình diễn tách biệt, không chỉ đề xuất giải pháp và không dừng lại ở việc tạo giao diện tĩnh.**
+
+Website hiện tại: **Pin điện & Điện phân · Hóa học 12**.
+
+Khu vực cần nâng cấp: **Phòng mô phỏng**, tại route đang có của ứng dụng, chẳng hạn `#/mo-phong`.
+
+Mục tiêu là biến phòng mô phỏng thành một môi trường 3D có khả năng khám phá từ xa đến gần, chọn dụng cụ, quan sát phản ứng và xem dữ liệu khoa học theo thời gian thực.
+
+Sản phẩm cuối cùng phải có thể tương tác thực sự trong trình duyệt.
+
+---
+
+# PHẦN I — NGHIÊN CỨU VIDEO THAM CHIẾU
+
+## 1. Phân tích trải nghiệm trong video
+
+Tôi cung cấp video minh họa một website tương tác 3D về sân vận động.
+
+Trước khi lập trình, hãy xem video đính kèm nếu video có sẵn trong môi trường làm việc. Nếu không truy cập được video, sử dụng mô tả chi tiết dưới đây làm đặc tả thay thế; không được tuyên bố đã xem video khi chưa thực sự xem.
+
+Video thể hiện một hệ thống khám phá không gian nhiều tầng:
+
+**Tầng 1 — Toàn cảnh sân vận động**
+
+Camera ở xa và trên cao, hiển thị toàn bộ sân vận động. Người dùng có thể nhận ra các khu khán đài và lựa chọn khu vực muốn khám phá.
+
+**Tầng 2 — Khán đài cụ thể**
+
+Sau khi chọn khu vực, camera tiến đến khán đài. Các hàng ghế, lối đi và vị trí cụ thể trở nên rõ ràng hơn.
+
+**Tầng 3 — Một ghế cụ thể**
+
+Khi người dùng chọn ghế, đối tượng được làm nổi bật và có thông tin gắn với vị trí lựa chọn.
+
+**Tầng 4 — Góc nhìn từ ghế**
+
+Camera chuyển đến góc nhìn tương ứng với vị trí của ghế, cho phép người dùng quan sát không gian từ điểm đã chọn.
+
+**Tầng 5 — Bảng thông tin ngữ cảnh**
+
+Thông tin của đối tượng xuất hiện ngay trong trải nghiệm, không buộc người dùng rời sang một trang khác.
+
+### 1.1. Chuyển nguyên lý tương tác sang Hóa học
+
+| Trải nghiệm sân vận động | Trải nghiệm hóa học cần xây dựng |
+|---|---|
+| Toàn cảnh sân vận động | Toàn cảnh phòng thí nghiệm |
+| Chọn một khán đài | Chọn một bàn thí nghiệm |
+| Đi sâu vào hàng ghế | Khám phá bộ dụng cụ |
+| Chọn một ghế | Chọn một dụng cụ |
+| Popup thông tin ghế | Popup thông tin hóa học |
+| Góc nhìn từ ghế | Góc nhìn cận cảnh phản ứng |
+| Quay về toàn sân | Quay về toàn phòng lab |
+
+### 1.2. Điều bắt buộc phải giữ từ video
+
+Cần tái hiện **ngôn ngữ tương tác**, không sao chép thiết kế sân vận động.
+
+Các đặc trưng bắt buộc:
+
+1. Một không gian 3D thống nhất.
+2. Camera di chuyển liên tục giữa các cấp độ.
+3. Người dùng biết rõ mình đang tiến gần đối tượng nào.
+4. Vật thể được chọn có phản hồi thị giác.
+5. Thông tin xuất hiện gần vật thể.
+6. Có thể chuyển nhanh giữa các đối tượng.
+7. Có thể quay lại cấp trước mà không mất trạng thái.
+8. Có góc quan sát cận cảnh giàu chiều sâu.
+9. Trải nghiệm liền mạch, không đổi trang hoặc tải lại cảnh khi chọn vật thể.
+10. Giao diện dễ sử dụng với chuột, cảm ứng và bàn phím.
+
+**Không được làm giả bằng cách chuyển giữa những ảnh PNG, slideshow, video dựng sẵn hoặc những màn hình React độc lập.**
+
+Các góc nhìn chính phải sử dụng cùng một cảnh 3D, cùng đối tượng và cùng trạng thái mô phỏng.
+
+---
+
+# PHẦN II — KIỂM TRA MÃ NGUỒN TRƯỚC KHI SỬA
+
+## 2. Kiểm tra kiến trúc dự án hiện tại
+
+Trước khi tạo thành phần mới, bắt buộc đọc toàn bộ phần mã liên quan.
+
+Tự xác định:
+
+- Framework React đang dùng.
+- JavaScript hay TypeScript.
+- Router và route mô phỏng.
+- Công cụ build.
+- Bộ thư viện giao diện.
+- Component mô phỏng hiện tại.
+- Module tính toán điện hóa.
+- Hệ thống lưu trạng thái.
+- Các bảng thông số.
+- Đồ thị và trục thời gian.
+- Các bộ điều khiển thí nghiệm.
+- CSS, theme và responsive hiện tại.
+- Những thư viện 3D đã được cài đặt.
+- Những bài học hoặc thành phần 2D cần giữ lại.
+
+Đọc các file thực tế rồi mới quyết định thay đổi.
+
+Không được tự giả định tên file hoặc tự tạo một ứng dụng React mới khi chưa cần thiết.
+
+### 2.1. Quy tắc chỉnh sửa
+
+- Giữ nguyên hệ thống điều hướng chính.
+- Không phá những trang không liên quan.
+- Không xóa chức năng 2D đang hoạt động.
+- Không thay thế những công thức đã được kiểm chứng chỉ để phục vụ đồ họa.
+- Không tạo hai bộ tính toán riêng cho 2D và 3D.
+- Không đổi phiên bản React hoặc nâng cấp toàn bộ dependency khi không cần.
+- Không làm mất dữ liệu người dùng đang có.
+- Không tạo API backend không cần thiết.
+- Không yêu cầu API AI trả phí để hiển thị cảnh 3D.
+
+Được phép tái cấu trúc phần mô phỏng để sử dụng trạng thái chung, miễn vẫn duy trì những chức năng trước đó.
+
+Nếu chưa có Three.js, ưu tiên sử dụng `three`, `@react-three/fiber` và `@react-three/drei` với phiên bản tương thích dự án.
+
+Sử dụng CSS hiện tại hoặc hệ thống style sẵn có. Không cài nhiều thư viện chỉ để tạo những nút và bảng thông tin đơn giản.
+
+---
+
+# PHẦN III — ĐỊNH HƯỚNG THIẾT KẾ
+
+## 3. Tạo phòng thí nghiệm 3D có bản sắc riêng
+
+Tên trải nghiệm:
+
+**ELECTROCHEMISTRY LAB**
+
+Phụ đề:
+
+*Khám phá thế giới điện hóa bằng tương tác 3D.*
+
+Phong cách thiết kế: phòng thí nghiệm khoa học hiện đại, mô hình kiến trúc cắt mái, thiết bị có độ chân thực vừa phải, ánh sáng điện ảnh tinh tế và giao diện tối giản.
+
+Định hướng thẩm mỹ:
+
+- Scientific visualization.
+- Premium interactive education.
+- Architectural miniature.
+- Dark laboratory interior.
+- Cinematic lighting.
+- Modern scientific instruments.
+- Minimal, high-information interface.
+
+**Đừng biến giao diện thành một dashboard AI chung chung.**
+
+Không dùng quá nhiều nút, thẻ thông tin cỡ lớn, gradient sặc sỡ, icon không cần thiết hoặc các hiệu ứng neon liên tục.
+
+Mục tiêu là một sản phẩm giáo dục được thiết kế thủ công, có tính nhận diện riêng.
+
+## 3.1. Design tokens
+
+Sử dụng bảng màu cơ sở:
+
+| Vai trò | Mã màu |
+|---|---|
+| Nền chính | `#10191C` |
+| Bề mặt phụ | `#18272B` |
+| Bề mặt nổi | `#223438` |
+| Xanh ngọc chủ đạo | `#78D4C4` |
+| Đồng ấm | `#C77B4C` |
+| Trắng ngà | `#EDF4F1` |
+| Chữ phụ | `#A2B6B5` |
+| Viền phân cách | `#365056` |
+
+Nguyên tắc:
+
+- Xanh ngọc thể hiện tương tác, dòng chuyển động và đối tượng đang chọn.
+- Đồng thể hiện vật liệu kim loại và các điểm nhấn.
+- Màu đỏ hoặc cam thể hiện cảnh báo khoa học khi cần.
+- Màu xanh dung dịch phải có tính vật lý, không dùng xanh phát sáng như nước ma thuật.
+- Chữ phải đọc được trên mọi nền.
+
+## 3.2. Nguyên tắc bố cục
+
+Khi người dùng vừa vào phòng mô phỏng, cảm giác đầu tiên phải là:
+
+**Tôi đang đứng trước một phòng thí nghiệm thu nhỏ với ba bộ dụng cụ có thể khám phá.**
+
+Không phải:
+
+**Tôi đang nhìn một bảng điều khiển có quá nhiều nút.**
+
+Dành phần lớn không gian đầu tiên cho cảnh 3D.
+
+Các chức năng nâng cao như thông số, phương trình và biểu đồ được đưa vào panel có thể mở rộng.
+
+---
+
+# PHẦN IV — DỰNG PHÒNG THÍ NGHIỆM 3D
+
+## 4. Tạo một cảnh 3D duy nhất
+
+Cảnh chính bao gồm:
+
+- Sàn phòng thí nghiệm.
+- Hai đến ba mảng tường theo dạng cắt mái.
+- Ba bàn thí nghiệm.
+- Lối đi ở giữa.
+- Đèn treo.
+- Một số kệ hoặc thiết bị hậu cảnh.
+- Các bộ dụng cụ điện hóa.
+- Biển tên từng bàn.
+- Các vùng tương tác ẩn.
+- Điểm neo HTML cho popup.
+
+Không dựng trần kín che camera.
+
+Mô hình căn phòng nên có cảm giác giống mô hình kiến trúc cao cấp, có thể quan sát chéo từ trên cao.
+
+### 4.1. Sơ đồ không gian
+
+Ba trạm thí nghiệm:
+
+**Bên trái — Pin Zn–Cu**
+
+Tên ngắn: `01 / PIN ĐIỆN`
+
+**Ở giữa — Điện phân CuSO₄**
+
+Tên ngắn: `02 / ĐIỆN PHÂN`
+
+**Bên phải — Điện phân NaCl**
+
+Tên ngắn: `03 / ĐIỆN PHÂN NaCl`
+
+Sắp xếp trên cùng mặt sàn, có khoảng trống giữa các bàn.
+
+Trên desktop, cả ba bàn phải hiện rõ ở góc tổng quan.
+
+Trên màn hình 390 px, điều chỉnh góc camera và khoảng cách theo kích thước viewport để vẫn thấy được vị trí của cả ba bàn, kể cả khi chi tiết bị thu nhỏ.
+
+Không tự động cắt bỏ bàn thứ ba trên mobile.
+
+## 4.2. Thiết kế bàn thí nghiệm
+
+Mỗi bàn có:
+
+- Mặt bàn vật liệu chống hóa chất.
+- Khung chân kim loại.
+- Mép bàn được bo nhẹ.
+- Biển tên đặt ở cạnh trước.
+- Một đèn trạng thái nhỏ.
+- Bề mặt có độ nhám thực tế.
+- Nhãn thứ tự trạm.
+- Vùng nhận tương tác đủ rộng.
+
+Khi chưa chọn, đèn trạng thái rất dịu.
+
+Khi hover hoặc focus, viền bàn chuyển sang xanh ngọc.
+
+Khi đã chọn, xuất hiện một đường nhấn sáng tinh tế trên mép bàn.
+
+Không dùng hiệu ứng phát sáng quá mức.
+
+## 4.3. Mô hình bình thủy tinh
+
+Bình thí nghiệm phải có chiều sâu thực sự:
+
+- Thành cốc có độ dày.
+- Miệng cốc nhìn được từ trên cao.
+- Đáy cốc rõ.
+- Mực dung dịch độc lập với thành cốc.
+- Điện cực nằm bên trong dung dịch.
+- Vật thể có bóng và phản xạ hợp lý.
+
+Ưu tiên vật liệu PBR đơn giản, tương thích WebGL trên điện thoại.
+
+Có thể tạo lớp dung dịch bằng mesh riêng với vật liệu bán trong suốt.
+
+Tránh sử dụng quá nhiều lớp trong suốt gây lỗi sắp xếp độ sâu hoặc giảm hiệu năng.
+
+## 4.4. Mô hình dụng cụ riêng biệt
+
+Không gộp mọi dụng cụ thành một mesh không thể chọn.
+
+Tối thiểu những vật thể sau phải có ID và vùng tương tác riêng:
+
+**Pin Zn–Cu:**
+- Cốc ZnSO₄.
+- Cốc CuSO₄.
+- Thanh Zn.
+- Thanh Cu.
+- Cầu muối KNO₃.
+- Dây dẫn ngoài.
+- Công tắc.
+- Vôn kế.
+- Dung dịch mỗi bên.
+- Đường chuyển động electron.
+- Đường chuyển động ion.
+
+**Điện phân CuSO₄:**
+- Bình điện phân.
+- Nguồn điện một chiều.
+- Cathode.
+- Anode.
+- Dung dịch.
+- Dây nối.
+- Lớp đồng bám.
+- Vùng sinh khí.
+- Nhãn sản phẩm.
+
+**Điện phân NaCl:**
+- Bình điện phân.
+- Nguồn điện.
+- Cathode.
+- Anode.
+- Dây nối.
+- Hai ngăn nếu là dung dịch có màng.
+- Màng ngăn.
+- Dung dịch hoặc chất điện li nóng chảy.
+- Vùng sản phẩm tại các điện cực.
+
+Mỗi vật thể phải có:
+
+- `id` ổn định.
+- Tên hiển thị.
+- Loại dụng cụ.
+- Trạm sở hữu.
+- Mô tả khoa học.
+- Vị trí neo popup.
+- Bounding box.
+- Camera target.
+- Vùng hitbox.
+- Trạng thái highlight.
+- Phản ứng khi chọn.
+
+---
+
+# PHẦN V — HỆ THỐNG CAMERA NHIỀU CẤP ĐỘ
+
+## 5. Xây dựng camera giống nguyên lý video
+
+Đây là phần ưu tiên cao nhất.
+
+Tạo hệ thống camera chung cho toàn bộ phòng.
+
+Không dùng cách thay thế toàn bộ scene khi đổi góc.
+
+Sử dụng một PerspectiveCamera có khả năng chuyển mục tiêu, khoảng cách, góc nhìn và quaternion một cách mượt mà.
+
+Các trạng thái:
+
+- `OVERVIEW`
+- `TABLE`
+- `OBJECT`
+- `REACTION`
+
+Camera phải giữ nguyên trạng thái góc nhìn đang có cho đến khi có lệnh mới.
+
+## 5.1. Góc 1 — OVERVIEW
+
+Góc mở đầu nhìn chéo từ trên cao.
+
+Thấy:
+
+- Sàn phòng.
+- Ba bàn.
+- Phần tường cắt mái.
+- Một số đèn.
+- Lối đi.
+- Biển tên của từng bàn.
+
+Camera có khả năng:
+
+- Xoay ngang.
+- Xoay dọc có giới hạn.
+- Phóng gần.
+- Phóng xa.
+- Chọn bàn.
+
+Góc nhìn mặc định phải được tính theo bounding box của căn phòng thay vì phụ thuộc một tọa độ cứng duy nhất.
+
+Bảo đảm cả ba bàn nằm trong khung ở kích thước desktop phổ biến.
+
+### Hover trên desktop
+
+Khi con trỏ đi vào vùng chọn bàn Zn–Cu:
+
+- Viền bàn phát sáng xanh ngọc nhẹ.
+- Biển tên tăng độ tương phản.
+- Một nhãn nhỏ hiện ra.
+
+Nội dung:
+
+**Pin Zn–Cu**  
+*Chọn để khám phá*
+
+Khi con trỏ rời bàn, hiệu ứng hover biến mất, trừ khi bàn đang được chọn.
+
+### Trên thiết bị cảm ứng
+
+Không phụ thuộc hover.
+
+Mỗi bàn phải có biển tên nhìn thấy được và có một nút chọn phù hợp.
+
+## 5.2. Góc 2 — TABLE VIEW
+
+Khi chọn một bàn, camera phải bay xuống từ góc hiện tại.
+
+Thời lượng mục tiêu: **0,8–1,2 giây**.
+
+Chuyển động:
+
+1. Camera bắt đầu từ góc nhìn đang có.
+2. Tiến về hướng bàn được chọn.
+3. Hạ thấp độ cao.
+4. Điều chỉnh hướng nhìn vào bộ dụng cụ.
+5. Giảm tốc trước khi dừng.
+
+Dùng easing có tăng giảm tốc tự nhiên.
+
+Không được:
+
+- Teleport camera ngay lập tức.
+- Bay xuyên mặt bàn.
+- Bay xuyên thành cốc.
+- Lộn camera.
+- Xoay 360 độ không cần thiết.
+- Bị giật khi chuyển từ OrbitControls sang camera animation.
+
+Khi chuyển đến bàn CuSO₄, người dùng phải nhìn thấy camera thực sự tiến về bàn ở giữa, không phải một cảnh hoàn toàn khác xuất hiện.
+
+### Camera hướng vào bàn
+
+Sau khi dừng, góc nhìn ưu tiên:
+
+- Nhìn rõ điện cực.
+- Nhìn rõ dung dịch.
+- Thấy nguồn hoặc mạch điện.
+- Thấy cấu trúc phản ứng.
+- Có đủ khoảng trống để hiển thị popup.
+
+Hiện popup:
+
+**Pin Zn–Cu**
+
+*Quan sát dòng electron trong dây ngoài và sự dịch chuyển ion qua cầu muối.*
+
+Nút:
+
+**Chạy thí nghiệm**  
+**Góc phản ứng**
+
+### Quy tắc ngắt chuyển động
+
+Nếu người dùng kéo chuột hoặc vuốt có chủ đích trong khi camera đang bay:
+
+- Hủy chuyển động camera tự động.
+- Giữ camera tại vị trí hiện tại.
+- Bàn vẫn là bàn đang chọn.
+- Cho phép điều khiển thủ công tiếp tục.
+
+Nếu người dùng chọn bàn khác giữa chừng:
+
+- Hủy đích cũ.
+- Bắt đầu chuyển động mới từ vị trí hiện tại.
+- Không nhảy về camera mặc định rồi mới chuyển tiếp.
+
+## 5.3. Góc 3 — OBJECT VIEW
+
+Từ góc bàn, người dùng chọn một dụng cụ.
+
+Ví dụ:
+
+- Cầu muối.
+- Thanh Zn.
+- Thanh Cu.
+- Công tắc.
+- Vôn kế.
+
+Camera tiến gần dụng cụ được chọn.
+
+Mỗi loại dụng cụ có cấu hình camera hợp lý.
+
+### Ví dụ chọn cầu muối
+
+Camera phải nhìn thấy cả hai đầu cầu muối chữ U.
+
+Không zoom quá gần đến mức mất một nhánh.
+
+Popup:
+
+**Cầu muối KNO₃**
+
+*Ion K⁺ di chuyển về ngăn Cu, còn NO₃⁻ di chuyển về ngăn Zn, góp phần duy trì cân bằng điện tích.*
+
+Nút: **Về bàn**
+
+### Ví dụ chọn vôn kế
+
+Góc cận phải thấy:
+
+- Màn hình số.
+- Dây kết nối.
+- Trạng thái công tắc.
+- Giá trị điện thế hiện tại.
+
+Không được phóng gần một cách máy móc vào tâm mesh khiến màn hình quay ra phía không nhìn được.
+
+### Ví dụ chọn công tắc
+
+Popup:
+
+**Công tắc**
+
+*Mạch đang mở. Chưa có dòng electron chạy qua tải.*
+
+Nút: **Đóng mạch**
+
+Sau khi bấm:
+
+- Công tắc đổi vị trí thực tế.
+- Trạng thái mạch cập nhật.
+- Số đo vôn kế cập nhật.
+- Khi mô phỏng đang phát, electron bắt đầu chuyển động.
+- Popup đổi mô tả thành “Mạch đang đóng”.
+
+Không tạo trạng thái riêng của công tắc chỉ cho mô hình 3D.
+
+## 5.4. Góc 4 — REACTION VIEW
+
+Đây là góc tương đương trải nghiệm nhìn từ ghế trong video.
+
+Khi bấm **Góc phản ứng**, camera chuyển xuống góc thấp hơn, gần mặt bàn.
+
+Mục tiêu là học sinh cảm giác đang đứng trước bộ dụng cụ và quan sát phản ứng.
+
+### Với Pin Zn–Cu
+
+Góc phản ứng phải nhìn rõ:
+
+- Hai cốc.
+- Hai điện cực.
+- Cầu muối.
+- Một đoạn dây ngoài.
+- Hướng electron.
+- Hướng ion.
+
+### Với CuSO₄
+
+Góc phản ứng tập trung vào:
+
+- Bề mặt cathode.
+- Lớp đồng bám.
+- Vị trí sinh khí nếu có.
+- Dung dịch.
+- Anode.
+
+### Với NaCl
+
+Góc phản ứng làm rõ:
+
+- Hai điện cực.
+- Vùng tạo sản phẩm.
+- Màng ngăn nếu biến thể có màng.
+- Hướng chuyển động ion.
+
+Không để hiệu ứng trang trí che khuất phản ứng.
+
+## 5.5. Chuyển camera an toàn
+
+Thiết kế một camera director chuyên trách.
+
+Hỗ trợ:
+
+- `moveToOverview`
+- `moveToTable`
+- `moveToObject`
+- `moveToReaction`
+- `cancelTransition`
+- `restorePreviousView`
+
+Mỗi lần chuyển phải có ID hoặc token để hủy animation cũ.
+
+Không cho phép hai animation đồng thời cập nhật cùng camera.
+
+Cần xử lý việc người dùng nhấn liên tục.
+
+Ví dụ:
+
+1. Chọn Zn–Cu.
+2. Camera đang di chuyển.
+3. Chọn CuSO₄.
+4. Camera chuyển ngay sang mục tiêu CuSO₄ từ vị trí hiện tại.
+5. Không bị giật hoặc hoàn thành animation Zn–Cu sau đó.
+
+Camera phải giữ hướng lên ổn định và hạn chế va chạm với geometry.
+
+---
+
+# PHẦN VI — HỆ THỐNG POPUP NEO VÀO KHÔNG GIAN 3D
+
+## 6. Không sử dụng modal toàn màn hình cho từng dụng cụ
+
+Popup phải giống bảng thông tin ngữ cảnh trong video.
+
+Sử dụng HTML để bảo đảm chữ sắc nét và nút có thể bấm được.
+
+Popup có thể triển khai bằng `Html` của Drei hoặc hệ thống chiếu tọa độ 3D sang vị trí 2D.
+
+Điều kiện:
+
+- Popup thuộc đúng một vật thể.
+- Cập nhật theo camera.
+- Không bị trễ quá xa chuyển động của vật thể.
+- Không làm tăng chi phí render DOM không cần thiết.
+
+## 6.1. Ba cấp thông tin
+
+**Cấp 1 — Hover tooltip**
+
+Chỉ có tên và lời mời chọn.
+
+Ví dụ:
+
+*Cầu muối KNO₃ · Xem chi tiết*
+
+**Cấp 2 — Popup bàn**
+
+Gồm:
+
+- Tên thí nghiệm.
+- Một hoặc hai câu giới thiệu.
+- Nút chạy.
+- Nút góc phản ứng.
+
+**Cấp 3 — Popup dụng cụ**
+
+Gồm:
+
+- Tên dụng cụ.
+- Chức năng.
+- Hướng phản ứng hoặc dữ liệu.
+- Nút thao tác nếu thích hợp.
+- Nút về bàn.
+
+Mỗi thời điểm chỉ có một popup chi tiết.
+
+## 6.2. Tự chọn vị trí popup
+
+Hệ thống phải tự đo không gian trống trên màn hình.
+
+Nếu đối tượng nằm ở phía phải, ưu tiên đặt popup bên trái.
+
+Nếu đối tượng nằm ở phía trái, ưu tiên popup bên phải.
+
+Nếu không đủ không gian, sử dụng vị trí thay thế an toàn.
+
+Không để popup tràn khỏi viewport.
+
+Đặt giới hạn an toàn cách mép màn hình.
+
+Có một đường nối mảnh từ popup đến vật thể được chọn.
+
+Đường nối phải di chuyển cùng đối tượng, không phải đường SVG cố định trên màn hình.
+
+## 6.3. Hạn chế popup nhảy liên tục
+
+Không tính lại phía đặt popup một cách thiếu ổn định khi camera chỉ thay đổi vài pixel.
+
+Dùng một ngưỡng chuyển bên để tránh hiện tượng bảng nhảy trái-phải liên tục.
+
+Khi đối tượng bị che bởi geometry hoặc đi ra khỏi camera frustum:
+
+- Ẩn popup neo nếu không còn hợp lý.
+- Giữ thông tin chọn trong hệ thống.
+- Không tự chọn nhầm đối tượng khác.
+
+Dùng raycast hoặc phương pháp kiểm tra che khuất phù hợp.
+
+## 6.4. Popup trên iPhone
+
+Ở màn hình hẹp, bảng nổi có thể che dụng cụ.
+
+Vì vậy:
+
+- Chuyển popup chi tiết thành bottom sheet.
+- Giữ tên vật thể ở đầu sheet.
+- Mặc định có chiều cao vừa phải.
+- Có thể thu gọn hoặc mở rộng.
+- Phần 3D phía trên vẫn quan sát được.
+- Không có cuộn ngang.
+
+Nút bấm có vùng chạm tối thiểu khoảng 44 × 44 CSS pixel.
+
+## 6.5. Accessibility
+
+Hỗ trợ:
+
+- Escape để đóng bảng.
+- Tab chuyển giữa các nút.
+- Enter hoặc Space để kích hoạt nút.
+- Trả focus về phần tử mở popup khi đóng.
+- `aria-label` cho các chức năng.
+- Trạng thái focus có viền rõ.
+- Không khóa bàn phím trong canvas.
+
+---
+
+# PHẦN VII — THIẾT KẾ PIN Zn–Cu
+
+## 7. Bộ thí nghiệm hoàn chỉnh
+
+Bàn Zn–Cu là thí nghiệm ưu tiên triển khai đầu tiên.
+
+Mô hình bắt buộc gồm:
+
+- Cốc bên trái chứa dung dịch ZnSO₄.
+- Thanh Zn nhúng vào cốc trái.
+- Cốc bên phải chứa dung dịch CuSO₄.
+- Thanh Cu nhúng vào cốc phải.
+- Cầu muối KNO₃ hình chữ U.
+- Dây ngoài nối hai điện cực.
+- Công tắc.
+- Vôn kế.
+- Đường chuyển động electron.
+- Đường chuyển động của ion.
+
+Mỗi phần phải có thể được xác định riêng.
+
+## 7.1. Phản ứng hóa học
+
+Tại anode Zn, xảy ra sự oxi hóa:
+
+**Zn → Zn²⁺ + 2e⁻**
+
+Tại cathode Cu, xảy ra sự khử:
+
+**Cu²⁺ + 2e⁻ → Cu**
+
+Phản ứng tổng:
+
+**Zn + Cu²⁺ → Zn²⁺ + Cu**
+
+Với pin đang phát điện:
+
+- Zn là cực âm.
+- Cu là cực dương.
+- Electron qua mạch ngoài đi từ Zn sang Cu.
+- NO₃⁻ trong cầu muối dịch chuyển về ngăn Zn.
+- K⁺ dịch chuyển về ngăn Cu.
+
+Hiển thị mũi tên minh họa đúng chiều.
+
+Không được cho electron chạy từ Cu sang Zn trong mạch ngoài.
+
+## 7.2. Chuyển động electron
+
+Tạo một đường cong 3D bám theo dây dẫn.
+
+Các hạt electron phải chuyển động dọc đường cong này.
+
+Không sử dụng các chấm bay tự do bên ngoài dây.
+
+Chuyển động phải phụ thuộc vào trạng thái chung:
+
+- Mạch mở: không có dòng electron qua tải.
+- Mạch đóng và đang phát: electron di chuyển.
+- Tạm dừng: hạt đứng yên.
+- Tua thời gian: hạt chuyển đến vị trí tương ứng.
+- Đổi camera: vị trí hạt không thay đổi do camera.
+- Đặt lại: về trạng thái ban đầu.
+
+Sử dụng thời gian mô phỏng làm nguồn tính vị trí hạt, thay vì cộng một khoảng di chuyển không kiểm soát ở mỗi frame.
+
+## 7.3. Chuyển động ion
+
+Trong cầu muối:
+
+- K⁺ dịch chuyển về phía ngăn Cu.
+- NO₃⁻ dịch chuyển về phía ngăn Zn.
+
+Tạo các đường chuyển động đi qua hai nhánh của cầu muối.
+
+Dùng số lượng hạt vừa phải.
+
+Có thể sử dụng màu hoặc ký hiệu khác nhau, nhưng phải có chú giải.
+
+Tốc độ chuyển động chỉ mang tính minh họa và phải thể hiện rõ đây không phải tỷ lệ tốc độ thực giữa electron và ion.
+
+## 7.4. Vôn kế hoạt động thật theo mô hình
+
+Nếu hệ thống hiện tại sử dụng:
+
+- Suất điện động: 1,103 V.
+- Điện trở ngoài: 100 Ω.
+- Điện trở trong giả định: 2 Ω.
+
+Giữ kết quả:
+
+**Mạch mở: 1,103 V**
+
+**Mạch đóng: khoảng 1,081 V**
+
+Giá trị trên vôn kế 3D phải khớp với bảng thông số và kết quả tính toán của hệ thống.
+
+Không hardcode độc lập số đo trong mesh.
+
+Khi người dùng chỉnh tham số, hệ thống phải tính lại từ nguồn trạng thái chung.
+
+## 7.5. Các hiệu ứng vật lý
+
+Khi pin hoạt động có thể minh họa:
+
+- Zn bị hòa tan dần.
+- Ion Zn²⁺ xuất hiện gần điện cực Zn.
+- Cu bám lên điện cực Cu.
+- Dung dịch thay đổi theo mô hình mô phỏng.
+- Electron chạy qua mạch ngoài.
+
+Hiệu ứng phải có cường độ vừa phải, dễ quan sát.
+
+Không tạo tia sét hoặc hiệu ứng phóng điện giữa các điện cực.
+
+---
+
+# PHẦN VIII — ĐIỆN PHÂN CuSO₄
+
+## 8. Cấu trúc thiết bị
+
+Bàn CuSO₄ phải hỗ trợ tối thiểu hai biến thể:
+
+1. Điện phân dung dịch CuSO₄ với điện cực trơ.
+2. Điện phân dung dịch CuSO₄ với anode đồng.
+
+Người dùng có thể chuyển biến thể trong giao diện.
+
+Việc chuyển biến thể phải thay đổi:
+
+- Mô hình điện cực.
+- Nhãn điện cực.
+- Phương trình.
+- Sản phẩm.
+- Hiệu ứng 3D.
+- Các đường dữ liệu liên quan.
+
+Không chỉ đổi tiêu đề trong popup.
+
+## 8.1. Biến thể điện cực trơ
+
+Ở cathode, ban đầu:
+
+**Cu²⁺ + 2e⁻ → Cu**
+
+Ở anode trơ, theo mô hình lý tưởng đang sử dụng:
+
+**2H₂O → O₂ + 4H⁺ + 4e⁻**
+
+Hiển thị:
+
+- Đồng bám trên cathode.
+- Khí O₂ xuất hiện ở anode.
+- Nồng độ Cu²⁺ thay đổi.
+- Mức độ bám đồng tiến triển theo thời gian.
+
+Khi mô hình đạt mốc Cu²⁺ cạn, cập nhật phản ứng cathode tương ứng với mô hình hiện tại, có thể minh họa sự khử nước tạo H₂.
+
+Không được tiếp tục cho đồng bám nếu bộ mô phỏng đã xác định Cu²⁺ cạn.
+
+## 8.2. Biến thể anode đồng
+
+Cathode:
+
+**Cu²⁺ + 2e⁻ → Cu**
+
+Anode:
+
+**Cu → Cu²⁺ + 2e⁻**
+
+Hiển thị:
+
+- Anode đồng bị hòa tan.
+- Cathode được phủ đồng.
+- Ion Cu²⁺ được bổ sung từ anode.
+- Không tự động hiển thị O₂ ở anode đồng trong điều kiện mô phỏng này.
+
+Dữ liệu nồng độ phải tuân theo mô hình hóa học hiện có.
+
+## 8.3. Thanh tua thời gian
+
+Khi tua từ thời điểm trước khi Cu²⁺ cạn sang sau khi cạn:
+
+- Phản ứng phải đổi đúng.
+- Lớp đồng ngừng tăng nếu mô hình yêu cầu.
+- Sản phẩm khí cập nhật.
+- Popup cập nhật.
+- Bảng số liệu cập nhật.
+- Đồ thị và cảnh 3D đồng bộ.
+
+Nếu kéo ngược thanh thời gian, các đối tượng phải trở về đúng trạng thái trước đó.
+
+Không dùng animation chỉ biết chạy một chiều mà không tái tạo được trạng thái khi tua ngược.
+
+---
+
+# PHẦN IX — ĐIỆN PHÂN NaCl
+
+## 9. Hai biến thể rõ ràng
+
+Hỗ trợ:
+
+**A. NaCl nóng chảy**
+
+**B. Dung dịch NaCl bão hòa có màng ngăn**
+
+Hai biến thể phải khác nhau về cấu trúc vật lý của bộ dụng cụ.
+
+## 9.1. NaCl nóng chảy
+
+Cathode:
+
+**Na⁺ + e⁻ → Na**
+
+Anode:
+
+**2Cl⁻ → Cl₂ + 2e⁻**
+
+Mô hình cho thấy:
+
+- Hệ thống điện phân chất điện li nóng chảy.
+- Nguồn điện một chiều.
+- Hai điện cực.
+- Sản phẩm Na ở cathode theo mô hình.
+- Khí Cl₂ ở anode.
+
+Không minh họa tạo H₂ hoặc NaOH như điện phân dung dịch.
+
+Không gán nước vào bình NaCl nóng chảy.
+
+## 9.2. NaCl bão hòa có màng ngăn
+
+Mô hình gồm:
+
+- Ngăn anode.
+- Ngăn cathode.
+- Màng ngăn trao đổi ion phù hợp.
+- Hai điện cực.
+- Dung dịch điện li.
+- Nguồn điện.
+- Nhãn sản phẩm.
+
+Cathode:
+
+**2H₂O + 2e⁻ → H₂ + 2OH⁻**
+
+Anode:
+
+**2Cl⁻ → Cl₂ + 2e⁻**
+
+Ion Na⁺ di chuyển qua màng phù hợp, góp phần tạo dung dịch NaOH trong ngăn cathode.
+
+Hiển thị:
+
+- H₂ ở ngăn cathode.
+- Cl₂ ở ngăn anode.
+- NaOH trong dung dịch ngăn cathode.
+- Hướng Na⁺ qua màng.
+- Sự phân tách sản phẩm.
+
+Màng phải nhìn thấy được dưới góc bàn và góc phản ứng.
+
+Không được để hai khí xuất hiện ở sai điện cực.
+
+## 9.3. An toàn khoa học
+
+Hiển thị các sản phẩm Cl₂, Na và NaOH đúng bản chất, với ghi chú an toàn phù hợp.
+
+Mô phỏng là công cụ học tập, không phải hướng dẫn tự chế thiết bị điện phân ngoài đời.
+
+Không bổ sung hướng dẫn chế tạo hoặc thu khí độc tại nhà.
+
+---
+
+# PHẦN X — KIẾN TRÚC TRẠNG THÁI CHUNG
+
+## 10. Một nguồn dữ liệu duy nhất
+
+Đây là yêu cầu kỹ thuật bắt buộc.
+
+Cảnh 3D, popup, bảng số liệu, đồ thị và các nút điều khiển phải dựa trên cùng kết quả mô phỏng.
+
+Tách hai loại trạng thái.
+
+### 10.1. Simulation state
+
+Gồm các thông tin như:
+
+- Experiment ID.
+- Biến thể.
+- Trạng thái mạch.
+- Thời gian mô phỏng.
+- Đang phát hay tạm dừng.
+- Tốc độ phát.
+- Tham số đầu vào.
+- Nồng độ.
+- Dòng điện.
+- Điện áp.
+- Khối lượng sản phẩm.
+- Trạng thái phản ứng.
+- Những mốc biến đổi quan trọng.
+
+### 10.2. Exploration state
+
+Gồm:
+
+- Góc camera.
+- Bàn được chọn.
+- Vật thể được chọn.
+- Popup đang mở.
+- Hover target.
+- Trạng thái bottom sheet.
+- Góc camera trước đó.
+- Animation camera hiện hành.
+
+**Camera không được thay đổi phép tính.**
+
+**Popup không được làm lại lượt thí nghiệm.**
+
+**Chọn một điện cực không được đặt lại thời gian.**
+
+## 10.3. Bộ chuyển đổi trạng thái sang hình ảnh
+
+Thiết kế một lớp chuyển đổi từ dữ liệu khoa học sang trạng thái 3D.
+
+Ví dụ:
+
+Từ thời gian và trạng thái mô phỏng, suy ra:
+
+- Vị trí hạt.
+- Độ dày lớp đồng.
+- Mức độ hòa tan Zn.
+- Mật độ bọt khí.
+- Trạng thái công tắc.
+- Giá trị vôn kế.
+- Sản phẩm hiển thị.
+- Hướng chuyển động.
+- Màu hoặc mực dung dịch nếu mô hình có hỗ trợ.
+
+Không lưu riêng một bộ số liệu khác chỉ để làm cảnh 3D.
+
+## 10.4. Khi đổi bàn
+
+Ví dụ:
+
+Người dùng chạy Zn–Cu đến giây thứ 20.
+
+Sau đó chọn CuSO₄.
+
+Hệ thống phải:
+
+1. Tạm dừng Zn–Cu tại giây 20.
+2. Chọn CuSO₄.
+3. Hiển thị trạng thái CuSO₄ của lượt hiện tại.
+4. Cập nhật camera.
+5. Cập nhật thông số.
+6. Không đặt lại Zn–Cu.
+
+Khi quay về Zn–Cu, thời gian và kết quả trước đó vẫn tồn tại.
+
+Chỉ thao tác **Đặt lại** mới đưa lượt thí nghiệm được chỉ định về trạng thái đầu.
+
+Khi thay đổi biến thể có thể làm thay đổi cấu hình thí nghiệm, phải có quy tắc chuyển trạng thái rõ ràng, không được âm thầm giữ lại những số liệu không còn hợp lệ.
+
+## 10.5. Khi tạm dừng
+
+Nếu người dùng tạm dừng tại giây 15,4:
+
+- Electron đứng yên.
+- Ion đứng yên.
+- Bọt khí ngừng tiến triển theo thời gian.
+- Lượng sản phẩm không thay đổi.
+- Giá trị đồ thị giữ nguyên.
+- Camera vẫn xoay được.
+- Popup vẫn mở được.
+
+Khi phát lại, hệ thống tiếp tục từ thời điểm đó.
+
+---
+
+# PHẦN XI — THÊM TỐI THIỂU 10 KHUNG HÌNH MÔ PHỎNG TỪNG BƯỚC
+
+## 11. Tạo chế độ học trực quan theo trình tự
+
+Ngoài chế độ xem phản ứng liên tục, cần bổ sung tính năng:
+
+**Khám phá phản ứng từng bước**
+
+Mỗi thí nghiệm và biến thể phải có tối thiểu **10 trạng thái hình ảnh có ý nghĩa khoa học**, được dựng từ cùng mô hình 3D hoặc từ ảnh chụp trạng thái mô hình.
+
+Không dùng 10 hình gần như giống hệt nhau chỉ thay số thứ tự.
+
+### 11.1. Ví dụ 10 bước cho Zn–Cu
+
+1. Toàn cảnh bộ pin trước khi hoạt động.
+2. Xác định hai điện cực.
+3. Quan sát hai dung dịch.
+4. Xác định cầu muối và đường đi của ion.
+5. Quan sát mạch mở và điện áp hở mạch.
+6. Đóng công tắc.
+7. Quan sát chiều electron qua dây ngoài.
+8. Quan sát sự oxi hóa tại Zn.
+9. Quan sát sự khử tại Cu và dịch chuyển ion.
+10. Tổng hợp phản ứng, chiều chuyển động và số liệu cuối bước học.
+
+Mỗi bước phải có:
+
+- Một hình minh họa riêng.
+- Tiêu đề.
+- Mô tả ngắn.
+- Ký hiệu hoặc phương trình cần nhớ.
+- Vị trí thời gian nếu áp dụng.
+- Nút tiến/lùi.
+- Nút quan sát trong 3D.
+
+### 11.2. Với CuSO₄
+
+Có 10 bước thể hiện quá trình từ nhận diện hệ điện phân, chiều điện cực, phản ứng ban đầu, quá trình bám đồng, tạo khí, thay đổi nồng độ đến trạng thái kết thúc hoặc mốc Cu²⁺ cạn nếu có.
+
+Nội dung phải khác nhau giữa điện cực trơ và anode đồng.
+
+### 11.3. Với NaCl
+
+Có 10 bước riêng cho NaCl nóng chảy và 10 bước riêng cho dung dịch bão hòa có màng.
+
+Các bước phải cho thấy sự khác nhau về chất điện li, phản ứng cathode, sản phẩm và vai trò của màng ngăn.
+
+## 11.4. Giao diện chuỗi hình ảnh
+
+Dưới vùng mô phỏng có thể mở dải thumbnail ngang:
+
+`01 → 02 → 03 → ... → 10`
+
+Chọn thumbnail nào thì:
+
+- Bước đó được highlight.
+- Mô hình hiển thị trạng thái tương ứng.
+- Phương trình được cập nhật.
+- Phần giải thích đổi theo.
+- Camera chuyển đến góc phù hợp nếu cần.
+
+Trên mobile có thể vuốt ngang danh sách thumbnail.
+
+Ưu tiên render thumbnail theo yêu cầu và cache kết quả, tránh tạo hàng chục WebGL canvas cùng lúc.
+
+Nếu dùng ảnh chụp từ canvas, tất cả hình phải có trạng thái khác nhau và phản ánh mô hình thực.
+
+---
+
+# PHẦN XII — THIẾT KẾ GIAO DIỆN HOÀN CHỈNH
+
+## 12. Desktop layout
+
+Bố cục ưu tiên:
+
+**Phía trên trái**
+
+Breadcrumb ngắn:
+
+`Phòng lab / Pin Zn–Cu / Cầu muối`
+
+Có thể bấm cấp trước để quay lại.
+
+**Phía trên phải**
+
+- Toàn cảnh.
+- Trợ giúp.
+- Bật/tắt nhãn nếu cần.
+
+**Trung tâm**
+
+Cảnh 3D.
+
+Đây là vùng quan trọng nhất.
+
+**Gần vật thể được chọn**
+
+Popup khoa học.
+
+**Phía dưới**
+
+Thanh điều khiển nhỏ:
+
+- Phát / Tạm dừng.
+- Từng bước.
+- Đặt lại.
+- Thời gian.
+- Tốc độ nếu đang hỗ trợ.
+
+**Bảng mở rộng**
+
+- Thông số.
+- Phương trình.
+- Đồ thị.
+- Các bước khám phá.
+
+Không hiển thị toàn bộ các bảng một cách cố định.
+
+Người dùng cần nhìn thấy mô hình trước khi nhìn thấy một lượng lớn dữ liệu.
+
+## 12.1. Mobile layout
+
+Với màn hình rộng 390 px:
+
+- Vùng 3D nằm trên cùng trong nội dung mô phỏng.
+- Thấy được ba trạm ở góc tổng quan.
+- Có nút Toàn cảnh rõ ràng.
+- Nhãn bàn đủ lớn để chọn.
+- Không để điều hướng che vật thể.
+- Phát / Tạm dừng nằm trong tầm chạm.
+- Popup chuyển thành bottom sheet.
+- Thanh tua hoạt động bằng cảm ứng.
+- Có thể cuộn trang bên ngoài canvas.
+- Không xuất hiện thanh cuộn ngang toàn trang.
+
+Không đơn giản thu nhỏ toàn bộ giao diện desktop.
+
+Tạo bố cục có chủ đích cho màn hình dọc.
+
+## 12.2. Motion design
+
+Sử dụng chuyển động chủ yếu để giải thích thay đổi không gian và trạng thái.
+
+Nên có:
+
+- Camera bay mượt.
+- Viền sáng khi chọn.
+- Popup xuất hiện nhẹ.
+- Hạt chuyển động có ý nghĩa.
+- Nhãn nổi theo đối tượng.
+- Thay đổi vật liệu khi phản ứng diễn ra.
+
+Không nên có:
+
+- Particle trang trí liên tục.
+- Hiệu ứng glow toàn màn hình.
+- Các nút nhấp nháy.
+- Animation tự chạy không liên quan.
+- Intro kéo dài.
+- Chữ bay lơ lửng quá nhiều.
+
+Mục tiêu là tinh tế, chuyên nghiệp và dễ học.
+
+---
+
+# PHẦN XIII — TƯƠNG TÁC CHUỘT, CẢM ỨNG VÀ BÀN PHÍM
+
+## 13. Desktop
+
+- Kéo chuột để xoay cảnh.
+- Cuộn để phóng gần hoặc xa.
+- Click để chọn vật thể.
+- Hover để xem gợi ý.
+- Double click không bắt buộc.
+- Escape đóng popup.
+
+Phân biệt thao tác click và drag dựa trên khoảng cách con trỏ di chuyển và trạng thái pointer.
+
+Sau khi người dùng kéo xoay camera, thao tác thả chuột không được vô tình chọn bàn.
+
+Các vùng chọn lớn hơn geometry thực tế nhưng không chồng lấn gây chọn nhầm.
+
+## 13.1. iPhone và cảm ứng
+
+- Một ngón kéo để xoay trong vùng 3D.
+- Hai ngón chụm để zoom.
+- Chạm nhẹ để chọn.
+- Vuốt có chủ đích không được kích hoạt click.
+- Các nút HTML tương ứng phải hoạt động thay cho thao tác chạm đối tượng nhỏ.
+
+Giới hạn hành vi chặn cuộn trang trong vùng thực sự cần điều khiển 3D.
+
+Không dùng `touch-action: none` trên toàn bộ trang.
+
+## 13.2. Bàn phím
+
+Bổ sung danh sách bàn và danh sách dụng cụ có thể focus bằng Tab.
+
+Người dùng phải có khả năng:
+
+- Chọn bàn.
+- Chọn dụng cụ.
+- Mở giải thích.
+- Chạy/tạm dừng.
+- Quay về bàn.
+- Về toàn cảnh.
+
+Không yêu cầu bàn phím phải tương tác trực tiếp với mesh vô hình.
+
+Dùng các nút HTML có ngữ nghĩa để tạo đường truy cập thay thế.
+
+---
+
+# PHẦN XIV — KIẾN TRÚC COMPONENT
+
+## 14. Tổ chức code rõ ràng
+
+Dựa trên cấu trúc dự án đang tồn tại, tổ chức logic theo các trách nhiệm sau.
+
+### Scene layer
+
+Phụ trách:
+
+- Room geometry.
+- Floor.
+- Walls.
+- Lighting.
+- Lab stations.
+- Shared resources.
+
+### Camera layer
+
+Phụ trách:
+
+- Camera presets.
+- Chuyển cảnh.
+- Orbit controls.
+- Hủy animation.
+- Giới hạn camera.
+- Xử lý reduced motion.
+
+### Object layer
+
+Phụ trách:
+
+- Glassware.
+- Electrodes.
+- Salt bridge.
+- Wires.
+- Switch.
+- Voltmeter.
+- Membrane.
+- Power supply.
+
+### Simulation visualization layer
+
+Phụ trách:
+
+- Electron paths.
+- Ion paths.
+- Gas bubbles.
+- Copper deposition.
+- Dissolution.
+- Product indicators.
+
+### UI layer
+
+Phụ trách:
+
+- Popup.
+- Breadcrumb.
+- Experiment selector.
+- Timeline.
+- Playback controls.
+- Step gallery.
+- Bottom sheet.
+
+### Domain layer
+
+Phụ trách:
+
+- Tính toán điện hóa.
+- Chuyển trạng thái.
+- Selector dữ liệu.
+- Các mốc thời gian.
+- Thông tin khoa học.
+
+Đây là sự phân chia theo trách nhiệm, không yêu cầu tạo cứng một file cho mỗi mục nếu kiến trúc hiện tại có cách tổ chức tốt hơn.
+
+## 14.1. Quy tắc code
+
+- Ưu tiên TypeScript nếu dự án dùng TypeScript.
+- Không dùng `any` tùy tiện.
+- Không hardcode dữ liệu khoa học trùng lặp.
+- Không lạm dụng React state cho dữ liệu thay đổi từng frame.
+- Không render lại toàn bộ giao diện với tần suất 60 lần/giây.
+- Dọn listener và tài nguyên khi unmount.
+- Hủy animation cũ đúng cách.
+- Dispose geometry, material và texture được tạo động.
+- Tái sử dụng geometry/material cho những đối tượng giống nhau.
+- Không tạo các vòng lặp animation không được dừng.
+
+## 14.2. Tính quyết định của mô phỏng
+
+Trạng thái hình ảnh ở một thời điểm phải có thể tái tạo.
+
+Ví dụ:
+
+Cùng tham số, cùng biến thể và cùng thời điểm 12,5 giây phải tạo cùng trạng thái sản phẩm, lớp đồng và các vị trí hạt minh họa.
+
+Nếu có thành phần ngẫu nhiên để thể hiện bọt khí, dùng seed ổn định hoặc cơ chế tương đương.
+
+Điều này quan trọng cho:
+
+- Tạm dừng.
+- Tua ngược.
+- Nhảy tới mốc.
+- Chụp hình 10 bước.
+- Kiểm thử tự động.
+
+---
+
+# PHẦN XV — HIỆU NĂNG VÀ KHẢ NĂNG DỰ PHÒNG
+
+## 15. Tối ưu WebGL
+
+Cảnh phải được tải khi người dùng vào phần mô phỏng, không bắt tất cả trang khác tải 3D ngay từ đầu.
+
+Áp dụng:
+
+- Lazy loading.
+- Reuse geometry.
+- Reuse material.
+- Frustum culling phù hợp.
+- Giới hạn số lượng hạt.
+- Giới hạn shadow map.
+- Tránh hiệu ứng hậu kỳ nặng không cần thiết.
+- Giới hạn pixel ratio.
+- Giảm số đèn có bóng động.
+
+Mục tiêu:
+
+- Desktop phổ thông: trải nghiệm mượt, hướng tới 60 FPS khi phù hợp.
+- Mobile: ưu tiên ổn định, hướng tới khoảng 30 FPS trở lên trên thiết bị hỗ trợ.
+- Không làm CPU/GPU hoạt động liên tục khi đã rời mục mô phỏng.
+
+Không tuyên bố đạt FPS nếu chưa đo thực tế.
+
+## 15.1. WebGL fallback
+
+Kiểm tra khả năng WebGL trước khi tạo scene.
+
+Nếu WebGL không khả dụng:
+
+Hiện thông báo ngắn:
+
+**Không thể khởi tạo phòng thí nghiệm 3D trên thiết bị này.**
+
+Nút:
+
+**Mở mô phỏng 2D**
+
+Mô phỏng 2D phải dùng chung trạng thái và bộ tính toán nếu kiến trúc hiện tại cho phép.
+
+Cũng cần xử lý sự kiện WebGL context lost.
+
+Không để trang trắng hoặc crash toàn bộ ứng dụng.
+
+## 15.2. Reduced motion
+
+Tôn trọng `prefers-reduced-motion`.
+
+Khi bật:
+
+- Camera đổi góc ngay hoặc dùng fade ngắn.
+- Tắt hiệu ứng chuyển động trang trí.
+- Vẫn giữ mũi tên định hướng.
+- Vẫn có số liệu và phương trình.
+- Vẫn điều khiển được thời gian mô phỏng.
+
+Không làm mất nội dung khoa học chỉ vì tắt animation.
+
+---
+
+# PHẦN XVI — KIỂM THỬ THỰC TẾ
+
+## 16. Kiểm tra chức năng, không chỉ kiểm tra build
+
+Việc `npm run build` thành công chưa có nghĩa là dự án hoàn chỉnh.
+
+Phải thực hiện kiểm thử phù hợp với các công cụ đang có.
+
+Ưu tiên kiểm thử tự động cho logic và thao tác trình duyệt nếu môi trường hỗ trợ.
+
+### 16.1. Nhóm camera
+
+**Test 01**
+
+Mở phòng mô phỏng.
+
+Kết quả: thấy ba bàn trong một phòng 3D.
+
+**Test 02**
+
+Click Zn–Cu.
+
+Kết quả: camera bay đến bàn Zn–Cu, không thay scene.
+
+**Test 03**
+
+Click cầu muối.
+
+Kết quả: camera nhìn rõ hai nhánh và popup đúng đối tượng.
+
+**Test 04**
+
+Bấm Góc phản ứng.
+
+Kết quả: chuyển đến góc thấp và giữ trạng thái thí nghiệm.
+
+**Test 05**
+
+Bấm Toàn cảnh.
+
+Kết quả: về góc mở đầu.
+
+**Test 06**
+
+Chọn bàn mới khi camera đang bay.
+
+Kết quả: hủy đích cũ, chuyển đúng bàn mới.
+
+**Test 07**
+
+Nhấn Về bàn khi đang chuyển đến dụng cụ.
+
+Kết quả: không xuất hiện camera giật hoặc popup sai.
+
+### 16.2. Nhóm vật thể và popup
+
+**Test 08**
+
+Hover các bàn trên desktop.
+
+Kết quả: chỉ bàn đang hover được làm nổi.
+
+**Test 09**
+
+Chọn dụng cụ sát mép màn hình.
+
+Kết quả: popup không tràn viewport.
+
+**Test 10**
+
+Xoay camera với popup đang mở.
+
+Kết quả: popup bám đúng vật thể.
+
+**Test 11**
+
+Chọn hai dụng cụ liên tiếp.
+
+Kết quả: chỉ dụng cụ cuối được chọn và popup chính xác.
+
+**Test 12**
+
+Đóng popup bằng Escape.
+
+Kết quả: đóng thành công và focus được khôi phục hợp lý.
+
+### 16.3. Nhóm mô phỏng hóa học
+
+**Test 13**
+
+Zn–Cu mở mạch.
+
+Kết quả: không chạy electron trong dây ngoài; điện áp hiển thị đúng mô hình.
+
+**Test 14**
+
+Zn–Cu đóng mạch.
+
+Kết quả: đúng chiều electron, ion và điện áp tải.
+
+**Test 15**
+
+Tạm dừng rồi xoay camera.
+
+Kết quả: thời gian và trạng thái phản ứng không đổi.
+
+**Test 16**
+
+CuSO₄ điện cực trơ, ngay trước và sau mốc Cu²⁺ cạn.
+
+Kết quả: phản ứng, hiệu ứng và đồ thị thay đổi đúng thời điểm.
+
+**Test 17**
+
+CuSO₄ anode đồng.
+
+Kết quả: đúng phản ứng hòa tan đồng và bám đồng.
+
+**Test 18**
+
+NaCl nóng chảy.
+
+Kết quả: sản phẩm đúng theo mô hình nóng chảy.
+
+**Test 19**
+
+NaCl bão hòa có màng.
+
+Kết quả: có màng, đúng sản phẩm và vị trí sinh khí.
+
+**Test 20**
+
+Chuyển bàn trong khi phản ứng đang phát.
+
+Kết quả: lượt cũ được tạm dừng, không tự reset.
+
+### 16.4. Nhóm responsive và accessibility
+
+**Test 21**
+
+Kiểm tra viewport desktop.
+
+**Test 22**
+
+Kiểm tra viewport rộng 390 px.
+
+**Test 23**
+
+Vuốt ngang qua bàn trên màn hình cảm ứng.
+
+Kết quả: không chọn nhầm.
+
+**Test 24**
+
+Chụm hai ngón để zoom.
+
+Kết quả: zoom đúng.
+
+**Test 25**
+
+Cuộn trang bên ngoài vùng 3D.
+
+Kết quả: trang vẫn cuộn bình thường.
+
+**Test 26**
+
+Duyệt nút bằng Tab và Enter.
+
+Kết quả: sử dụng được đường tương tác chính.
+
+**Test 27**
+
+Bật reduced motion.
+
+Kết quả: chuyển góc an toàn, kiến thức vẫn đầy đủ.
+
+**Test 28**
+
+Tắt hoặc làm mất WebGL.
+
+Kết quả: fallback 2D có thể sử dụng.
+
+### 16.5. Nhóm ảnh theo bước
+
+**Test 29**
+
+Kiểm tra đủ 10 khung hình cho từng thí nghiệm và biến thể.
+
+**Test 30**
+
+Chọn bước thứ 7, quay về bước 3, sau đó bước 7.
+
+Kết quả: trạng thái hình ảnh và dữ liệu nhất quán.
+
+Không được đánh dấu PASS cho các bài kiểm thử chưa thực sự chạy.
+
+---
+
+# PHẦN XVII — THỨ TỰ TRIỂN KHAI
+
+## 17. Thực hiện theo các giai đoạn, không làm tất cả cùng lúc một cách thiếu kiểm soát
+
+### Giai đoạn 1 — Hoàn thiện camera và phòng 3D
+
+Triển khai:
+
+- Scene.
+- Sàn và tường.
+- Ba bàn.
+- Camera toàn cảnh.
+- Camera bàn.
+- Camera dụng cụ.
+- Camera phản ứng.
+- Các vùng tương tác.
+- Breadcrumb.
+- Popup.
+
+Hoàn thành đường đi:
+
+**Toàn cảnh → Zn–Cu → Cầu muối → Góc phản ứng → Toàn cảnh**
+
+Chạy và kiểm tra trước khi tiếp tục.
+
+### Giai đoạn 2 — Hoàn thiện Zn–Cu
+
+Triển khai:
+
+- Công tắc thật.
+- Electron.
+- Ion.
+- Vôn kế.
+- Liên kết dữ liệu.
+- Tạm dừng.
+- Tua thời gian.
+- Đặt lại.
+
+### Giai đoạn 3 — CuSO₄
+
+Triển khai:
+
+- Hai biến thể.
+- Đồng bám.
+- Oxi/hidro tương ứng.
+- Anode đồng.
+- Mốc Cu²⁺ cạn.
+- Đồ thị đồng bộ.
+
+### Giai đoạn 4 — NaCl
+
+Triển khai:
+
+- Nóng chảy.
+- Dung dịch bão hòa.
+- Màng ngăn.
+- Các sản phẩm.
+- Popup và góc quan sát.
+
+### Giai đoạn 5 — Khám phá 10 bước
+
+Triển khai:
+
+- Nội dung các bước.
+- Hình minh họa theo trạng thái.
+- Thumbnail.
+- Tua theo bước.
+- Giải thích khoa học.
+- Liên kết với cảnh 3D.
+
+### Giai đoạn 6 — Mobile, accessibility và tối ưu
+
+Triển khai:
+
+- Layout 390 px.
+- Bottom sheet.
+- Touch gestures.
+- Keyboard.
+- Reduced motion.
+- WebGL fallback.
+- Performance tuning.
+
+### Giai đoạn 7 — Kiểm thử và bàn giao
+
+Chạy build và những bài kiểm thử có thể thực hiện.
+
+Mở preview, tương tác thật, phát hiện lỗi và sửa.
+
+Không dừng ở bước tạo mã nếu chưa xác minh ứng dụng có thể chạy.
+
+---
+
+# PHẦN XVIII — TIÊU CHUẨN CHẤT LƯỢNG CUỐI CÙNG
+
+## 18. Những điều tuyệt đối không chấp nhận
+
+Không chấp nhận:
+
+1. Một căn phòng giả 3D chỉ dựng bằng CSS.
+2. Ba hình ảnh bàn thí nghiệm thay cho mô hình thật.
+3. Camera zoom bằng cách phóng ảnh.
+4. Mỗi bàn là một trang riêng biệt.
+5. Popup đứng yên một chỗ khi camera xoay.
+6. Click dụng cụ nhưng không có phản hồi.
+7. Công tắc chỉ thay màu mà không ảnh hưởng mô phỏng.
+8. Electron chuyển động sai chiều.
+9. Khí xuất hiện sai điện cực.
+10. Điện áp trong 3D khác với bảng số liệu.
+11. Bấm chuyển camera làm reset thí nghiệm.
+12. Camera xuyên qua vật thể.
+13. Một cú vuốt bị hiểu là click.
+14. Hình minh họa không khớp dữ liệu khoa học.
+15. 10 khung hình giống nhau chỉ đổi tiêu đề.
+16. Giao diện mobile bị che, tràn hoặc khó chạm.
+17. Bảng điều khiển quá nhiều nút gây rối.
+18. Chức năng 3D hoạt động nhưng làm hỏng mô phỏng 2D.
+19. Nội dung placeholder giả vờ là tính năng đã hoàn thiện.
+20. Tuyên bố kiểm thử thành công khi chưa chạy.
+
+## 18.1. Những điều bắt buộc đạt
+
+Sau khi hoàn thành, một học sinh lớp 12 phải có thể:
+
+- Bước vào phòng lab 3D.
+- Nhìn thấy ba bàn.
+- Chọn một bàn.
+- Xem từng dụng cụ.
+- Nhận diện điện cực và dấu cực.
+- Đọc phương trình.
+- Chạy phản ứng.
+- Quan sát electron hoặc ion.
+- Xem kết quả số liệu.
+- Tạm dừng và tua lại.
+- Đổi góc quan sát.
+- Học qua các hình ảnh từng bước.
+- Quay về toàn cảnh.
+- Chuyển sang thí nghiệm khác.
+- Sử dụng trên điện thoại.
+
+Tất cả diễn ra trong cùng ứng dụng mà không cần tải lại trang.
+
+---
+
+# PHẦN XIX — HÌNH THỨC BÀN GIAO
+
+## 19. Yêu cầu thực thi
+
+Sau khi triển khai, phải cung cấp:
+
+**A. Bản preview hoạt động**
+
+Mở được trong môi trường preview hiện tại.
+
+Nếu môi trường có khả năng chạy ứng dụng và cung cấp preview URL, hãy khởi động ứng dụng và cung cấp đúng URL thực tế.
+
+Không tự tạo một liên kết giả.
+
+**B. Danh sách thay đổi**
+
+Ghi ngắn:
+
+- Thành phần đã tạo.
+- Thành phần đã chỉnh sửa.
+- Phần logic được tái sử dụng.
+- Các dependency bổ sung nếu có.
+
+**C. Kết quả kiểm thử**
+
+Nêu rõ:
+
+- Kiểm tra build.
+- Kiểm tra camera.
+- Kiểm tra popup.
+- Kiểm tra hóa học.
+- Kiểm tra mobile.
+- Kiểm tra fallback 2D.
+
+**D. Giới hạn chưa xác minh**
+
+Nếu chưa có iPhone thật, phải ghi:
+
+*Đã kiểm tra responsive và mô phỏng cảm ứng bằng viewport 390 px; chưa kiểm tra trực tiếp trên Safari iPhone thật.*
+
+Nếu chưa kiểm tra hiệu năng trên phần cứng thật, không đưa ra tuyên bố đã đạt FPS.
+
+Nếu một chức năng chưa hoàn thành, nêu rõ thay vì mô tả như đã hoạt động.
+
+---
+
+# PHẦN XX — CHỈ THỊ THỰC THI QUAN TRỌNG NHẤT
+
+Đây là yêu cầu xây dựng sản phẩm thực tế.
+
+**Không trả lời bằng một bản phân tích dài mà không sửa mã nguồn.**
+
+**Không chỉ tạo mockup.**
+
+**Không chỉ tạo một mô hình trang trí.**
+
+**Không chuyển đổi camera bằng cách thay ảnh nền.**
+
+**Không tự tạo một ứng dụng mới độc lập nếu dự án hiện tại có thể nâng cấp.**
+
+Hãy thực hiện theo trình tự:
+
+1. Đọc source code.
+2. Xác định phần cần sửa.
+3. Dựng cảnh 3D thật.
+4. Xây dựng camera navigation.
+5. Kết nối tương tác vật thể.
+6. Kết nối dữ liệu mô phỏng.
+7. Hoàn thiện ba bàn.
+8. Xây dựng hệ thống 10 bước.
+9. Kiểm thử.
+10. Khởi động bản preview.
+
+Trong quá trình làm, ưu tiên chức năng hoạt động và kiến trúc đúng trước khi thêm hiệu ứng trang trí.
+
+Nếu có lỗi, hãy đọc thông báo lỗi, tìm nguyên nhân và sửa trực tiếp.
+
+Nếu gặp giới hạn môi trường, phải giữ những phần đã hoàn thành và nêu đúng giới hạn, không thay thế bằng một bản demo giả.
+
+## TIÊU CHÍ THÀNH CÔNG TỐI CAO
+
+Tôi muốn trải nghiệm khi bấm chọn một bàn thí nghiệm giống cảm giác trong video sân vận động:
+
+**Tôi nhìn thấy toàn bộ không gian → chọn một khu vực → camera đưa tôi đến khu vực đó → tôi chọn một vật thể → camera đưa tôi đến gần vật thể → tôi quan sát hoạt động thực tế từ góc cận cảnh → tôi xem thông tin → tôi có thể quay lại bất cứ lúc nào.**
+
+Điểm khác biệt là ở đây, mỗi vật thể và chuyển động đều phục vụ việc học điện hóa.
+
+**Sản phẩm phải cho cảm giác đây là một phòng thí nghiệm 3D tương tác thực sự, chứ không phải một website giáo dục thông thường được trang trí thêm mô hình 3D.**
+
+BẮT ĐẦU ĐỌC MÃ NGUỒN VÀ TRIỂN KHAI TRỰC TIẾP. ƯU TIÊN HOÀN THÀNH VÀ KIỂM THỬ LUỒNG Zn–Cu TRƯỚC, SAU ĐÓ MỞ RỘNG CHO TOÀN BỘ PHÒNG THÍ NGHIỆM. CHỈ BÀN GIAO NHỮNG CHỨC NĂNG THỰC SỰ ĐÃ TẠO VÀ XÁC MINH.
