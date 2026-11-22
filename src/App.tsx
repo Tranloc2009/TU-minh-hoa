@@ -24,6 +24,7 @@ const VALID_SIM_TABS = new Set<SimTabId>([
   'pin-zn-cu',
   'dien-phan-cuso4',
   'nacl-nong-chay',
+  'dien-phan-nacl',
   'faraday',
 ]);
 
@@ -271,6 +272,7 @@ export default function App() {
           <SimulationLab
             initialTab={route.tab}
             onTabChange={(tab) => navigate({ view: 'simulation', tab })}
+            onOpenLesson={(slug) => navigate({ view: 'lesson', slug })}
           />
         )}
 
@@ -291,9 +293,15 @@ export default function App() {
         )}
       </main>
 
-      {/* Quiet Textbook Footer */}
-      <footer className="mt-16 border-t border-rule bg-paper-soft/60">
-        <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-ink-muted">
+      {/* Quiet Textbook / Lab Footer */}
+      <footer
+        className={
+          isSimActive
+            ? 'border-t border-[#1F2F35] bg-[#0B1215] text-[#9BB0B5]'
+            : 'mt-16 border-t border-rule bg-paper-soft/60 text-ink-muted'
+        }
+      >
+        <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
           <div>
             Pin điện &amp; Điện phân · Hóa học 12 · Chương 5
           </div>
