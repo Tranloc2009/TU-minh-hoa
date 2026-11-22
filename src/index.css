@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+  --font-sans: "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-paper: #F7F4EC;
+  --color-paper-soft: #FCFBF7;
+  --color-paper-muted: #EFECE2;
+  --color-ink: #172B2E;
+  --color-ink-muted: #465B5E;
+  --color-verdigris: #266C63;
+  --color-verdigris-dark: #1C534C;
+  --color-verdigris-tint: #E5F0EE;
+  --color-copper: #A34E32;
+  --color-copper-dark: #833B24;
+  --color-copper-tint: #F7EBE6;
+  --color-rule: #D7D1C3;
+  --color-rule-strong: #BEB6A5;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: clip;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--color-verdigris);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.chem-formula {
+  font-family: var(--font-sans);
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.chem-formula sub,
+.chem-formula sup {
+  font-size: 0.72em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.chem-formula sup {
+  top: -0.42em;
+}
+
+.chem-formula sub {
+  bottom: -0.22em;
+}
+
+@keyframes dashFlowForward {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashFlowReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 24;
+  }
+}
+
+@keyframes bubbleRise {
+  0% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-48px);
+    opacity: 0;
+  }
+}
+
+.animate-dash-forward {
+  animation: dashFlowForward 1.1s linear infinite;
+}
+
+.animate-dash-reverse {
+  animation: dashFlowReverse 1.1s linear infinite;
+}
+
+.animate-bubble-rise {
+  animation: bubbleRise 2s ease-in infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-dash-forward,
+  .animate-dash-reverse,
+  .animate-bubble-rise {
+    animation: none !important;
+  }
+}
